@@ -26,11 +26,10 @@ jobs:
               "issuetype": {
                 "name": "Task"
               },
-              "summary": "${{ github.event.issue.title }}",
-              "description": "${{ github.event.issue.body }}",
+              "summary": "github#${{ github.event.issue.number }} ${{ github.event.issue.title }}",
+              "description": "[Issue URL](${{ github.event.issue.html_url }})\n\n${{ github.event.issue.body }}",
               "labels": [
-                "github-issues",
-                "github-issue-#${{ github.event.issue.number }}"
+                "github-issue"
               ]
             }
           }' \
