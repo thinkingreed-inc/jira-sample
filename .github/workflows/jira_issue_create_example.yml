@@ -27,7 +27,7 @@ jobs:
                 "name": "Task"
               },
               "summary": "github#${{ github.event.issue.number }} ${{ github.event.issue.title }}",
-              "description": "[Issue URL](${{ github.event.issue.html_url }})\n\n${{ github.event.issue.body }}",
+              "description": "${{ github.event.issue.html_url }}\n\n${{ github.event.issue.body }}",
               "labels": [
                 "github-issue"
               ]
