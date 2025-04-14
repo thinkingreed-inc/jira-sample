@@ -1,36 +1,59 @@
-name: Create issue
+name: Create or Update Issue
 
-# githubのissueが開かれたときに作動(type->[opend])
+# githubのissueが開かれたときや編集されたときに作動
 on:
   issues:
-  push:
-    types: [opened]
+    types: [opened, edited]
 
 # ここからworkflow
 jobs:
   build:
     runs-on: ubuntu-latest
     name: Jira Example
-    if: github.event.action == 'opened'
     steps:
-    - name: Create Jira Issue
+    - name: Create or Update Jira Issue
       run: |
-        curl -X POST \
-          -H "Content-Type: application/json" \
-          -u ${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }} \
-          -d '{
-            "fields": {
-              "project": {
-                "key": "KWI"
-              },
-              "issuetype": {
-                "name": "Task"
-              },
-              "summary": "github#${{ github.event.issue.number }} ${{ github.event.issue.title }}",
-              "description": "${{ github.event.issue.html_url }}\n\n${{ github.event.issue.body }}",
-              "labels": [
-                "github-issue"
-              ]
-            }
-          }' \
-          ${{ secrets.JIRA_BASE_URL }}/rest/api/2/issue/
+        ISSUE_KEY=$(curl --request GET \
+        --url '${{ secrets.JIRA_BASE_URL }}/rest/api/3/search?jql=project%20%3D%20"${{ secrets.JIRA_PROJECT }}"%20AND%20summary%20~%20%22%5C%22github%23{{ github.event.issue.number }}*%5C%22%22' \
+        --user '{{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }}' \
+        --header 'Accept: application/json'
+        --header 'Content-Type: application/json' \
+          | jq -r '.issues[0].key // empty')
+
+        if [ -z "$ISSUE_KEY" ]; then
+          # チケットが存在しない場合は新規作成
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -u ${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }} \
+            -d '{
+              "fields": {
+                "project": {
+                  "key": "${{ secrets.JIRA_PROJECT }}"
+                },
+                "issuetype": {
+                  "name": "Task"
+                },
+                "summary": "github#${{ github.event.issue.number }} ${{ github.event.issue.title }}",
+                "description": "${{ github.event.issue.html_url }}\n\n${{ github.event.issue.body }}",
+                "labels": [
+                  "github-issue"
+                ]
+              }
+            }' \
+            ${{ secrets.JIRA_BASE_URL }}/rest/api/2/issue/
+        else
+          # チケットが存在する場合は更新
+          curl -X PUT \
+            -H "Content-Type: application/json" \
+            -u ${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }} \
+            -d '{
+              "fields": {
+                "summary": "github#${{ github.event.issue.number }} ${{ github.event.issue.title }}",
+                "description": "${{ github.event.issue.html_url }}\n\n${{ github.event.issue.body }}",
+                "labels": [
+                  "github-issue"
+                ]
+              }
+            }' \
+            ${{ secrets.JIRA_BASE_URL }}/rest/api/2/issue/$ISSUE_KEY
+        fi
