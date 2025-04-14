@@ -1,0 +1,50 @@
+name: Change issue
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  update-jira:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if Jira Issue Exists
+        id: find-issue
+        run: |
+          RESPONSE=$(curl -s -X GET -H "Authorization: Basic $(echo -n ${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }} | base64)" \
+                          -H "Content-Type: application/json" \
+                          "${{ secrets.JIRA_BASE_URL }}/rest/api/2/search?jql=project=KWI AND summary~\"${{ github.event.issue.title }}\"")
+          ISSUE_KEY=$(echo "$RESPONSE" | jq -r '.issues[0].key // empty')
+          if [ -n "$ISSUE_KEY" ]; then
+            echo "issue=$ISSUE_KEY" >> $GITHUB_OUTPUT
+          else
+            echo "issue=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Jira Issue
+        if: steps.find-issue.outputs.issue == ''
+        run: |
+          curl -X POST -H "Authorization: Basic $(echo -n ${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }} | base64)" \
+               -H "Content-Type: application/json" \
+               -d '{
+                 "fields": {
+                   "project": { "key": "KWI" },
+                   "summary": "${{ github.event.issue.title }}",
+                   "description": "${{ github.event.issue.body }}",
+                   "issuetype": { "name": "Task" }
+                 }
+               }' \
+               ${{ secrets.JIRA_BASE_URL }}/rest/api/2/issue
+
+      - name: Update Jira Issue
+        if: steps.find-issue.outputs.issue != ''
+        run: |
+          curl -X PUT -H "Authorization: Basic $(echo -n ${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }} | base64)" \
+               -H "Content-Type: application/json" \
+               -d '{
+                 "fields": {
+                   "summary": "${{ github.event.issue.title }}",
+                   "description": "${{ github.event.issue.body }}"
+                 }
+               }' \
+               ${{ secrets.JIRA_BASE_URL }}/rest/api/2/issue/${{ steps.find-issue.outputs.issue }}
