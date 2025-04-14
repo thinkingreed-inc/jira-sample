@@ -11,9 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     name: Jira Example
     steps:
-    - name: Install jq
-      run: sudo apt-get update && sudo apt-get install -y jq
-
     - name: Create or Update Jira Issue
       run: |
         ISSUE_KEY=$(curl --request GET \
