@@ -19,7 +19,7 @@ jobs:
         ISSUE_KEY=$(curl --request GET \
         --url '${{ secrets.JIRA_BASE_URL }}/rest/api/3/search?jql=project%20%3D%20"${{ secrets.JIRA_PROJECT }}"%20AND%20summary%20~%20%22%5C%22github%23${{ github.event.issue.number }}*%5C%22%22' \
         --user '{{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }}' \
-        --header 'Accept: application/json'
+        --header 'Accept: application/json' \
         --header 'Content-Type: application/json' \
           | jq -r '.issues[0].key // empty')
 
