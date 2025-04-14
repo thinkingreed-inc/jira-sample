@@ -29,7 +29,7 @@ jobs:
               "summary": "${{ github.event.issue.title }}",
               "description": "${{ github.event.issue.body }}",
               "labels": [
-                "github issues",
+                "github-issues",
                 "github-issue-#${{ github.event.issue.number }}"
               ]
             }
