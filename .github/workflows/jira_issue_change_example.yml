@@ -8,13 +8,23 @@ jobs:
   update-jira:
     runs-on: ubuntu-latest
     steps:
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Check if Jira Issue Exists
         id: find-issue
         run: |
-          RESPONSE=$(curl -s -X GET -H "Authorization: Basic $(echo -n ${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }} | base64)" \
+          RESPONSE=$(curl -s -w "%{http_code}" -o response.json -X GET \
+                          -H "Authorization: Basic $(echo -n ${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }} | base64)" \
                           -H "Content-Type: application/json" \
                           "${{ secrets.JIRA_BASE_URL }}/rest/api/2/search?jql=project=KWI AND summary~\"${{ github.event.issue.title }}\"")
-          ISSUE_KEY=$(echo "$RESPONSE" | jq -r '.issues[0].key // empty')
+          HTTP_CODE=$(tail -n1 <<< "$RESPONSE")
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "Error: Failed to query JIRA API. HTTP code: $HTTP_CODE"
+            cat response.json
+            exit 1
+          fi
+          ISSUE_KEY=$(jq -r '.issues[0].key // empty' response.json)
           if [ -n "$ISSUE_KEY" ]; then
             echo "issue=$ISSUE_KEY" >> $GITHUB_OUTPUT
           else
@@ -24,27 +34,41 @@ jobs:
       - name: Create Jira Issue
         if: steps.find-issue.outputs.issue == ''
         run: |
-          curl -X POST -H "Authorization: Basic $(echo -n ${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }} | base64)" \
-               -H "Content-Type: application/json" \
-               -d '{
-                 "fields": {
-                   "project": { "key": "KWI" },
-                   "summary": "${{ github.event.issue.title }}",
-                   "description": "${{ github.event.issue.body }}",
-                   "issuetype": { "name": "Task" }
-                 }
-               }' \
-               ${{ secrets.JIRA_BASE_URL }}/rest/api/2/issue
+          RESPONSE=$(curl -s -w "%{http_code}" -o response.json -X POST \
+                          -H "Authorization: Basic $(echo -n ${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }} | base64)" \
+                          -H "Content-Type: application/json" \
+                          -d '{
+                            "fields": {
+                              "project": { "key": "KWI" },
+                              "summary": "${{ github.event.issue.title }}",
+                              "description": "${{ github.event.issue.body }}",
+                              "issuetype": { "name": "Task" }
+                            }
+                          }' \
+                          ${{ secrets.JIRA_BASE_URL }}/rest/api/2/issue)
+          HTTP_CODE=$(tail -n1 <<< "$RESPONSE")
+          if [ "$HTTP_CODE" -ne 201 ]; then
+            echo "Error: Failed to create JIRA issue. HTTP code: $HTTP_CODE"
+            cat response.json
+            exit 1
+          fi
 
       - name: Update Jira Issue
         if: steps.find-issue.outputs.issue != ''
         run: |
-          curl -X PUT -H "Authorization: Basic $(echo -n ${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }} | base64)" \
-               -H "Content-Type: application/json" \
-               -d '{
-                 "fields": {
-                   "summary": "${{ github.event.issue.title }}",
-                   "description": "${{ github.event.issue.body }}"
-                 }
-               }' \
-               ${{ secrets.JIRA_BASE_URL }}/rest/api/2/issue/${{ steps.find-issue.outputs.issue }}
+          RESPONSE=$(curl -s -w "%{http_code}" -o response.json -X PUT \
+                          -H "Authorization: Basic $(echo -n ${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }} | base64)" \
+                          -H "Content-Type: application/json" \
+                          -d '{
+                            "fields": {
+                              "summary": "${{ github.event.issue.title }}",
+                              "description": "${{ github.event.issue.body }}"
+                            }
+                          }' \
+                          ${{ secrets.JIRA_BASE_URL }}/rest/api/2/issue/${{ steps.find-issue.outputs.issue }})
+          HTTP_CODE=$(tail -n1 <<< "$RESPONSE")
+          if [ "$HTTP_CODE" -ne 204 ]; then
+            echo "Error: Failed to update JIRA issue. HTTP code: $HTTP_CODE"
+            cat response.json
+            exit 1
+          fi
