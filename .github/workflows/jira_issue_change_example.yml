@@ -14,16 +14,21 @@ jobs:
       - name: Check if Jira Issue Exists
         id: find-issue
         run: |
-          RESPONSE=$(curl -s -w "%{http_code}" -o response.json -X GET \
-                          -H "Authorization: Basic $(echo -n ${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }} | base64)" \
-                          -H "Content-Type: application/json" \
-                          "${{ secrets.JIRA_BASE_URL }}/rest/api/2/search?jql=project=KWI AND summary~\"${{ github.event.issue.title }}\"")
-          HTTP_CODE=$(tail -n1 <<< "$RESPONSE")
+          # Perform the API call and separate response body and HTTP code
+          curl -s -o response.json -w "%{http_code}" -X GET \
+               -H "Authorization: Basic $(echo -n ${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }} | base64)" \
+               -H "Content-Type: application/json" \
+               "${{ secrets.JIRA_BASE_URL }}/rest/api/2/search?jql=project=KWI AND summary~\"${{ github.event.issue.title }}\"" > http_code.txt
+          HTTP_CODE=$(cat http_code.txt)
+
+          # Check if the HTTP code is 200 (success)
           if [ "$HTTP_CODE" -ne 200 ]; then
             echo "Error: Failed to query JIRA API. HTTP code: $HTTP_CODE"
             cat response.json
             exit 1
           fi
+
+          # Extract the issue key from the response
           ISSUE_KEY=$(jq -r '.issues[0].key // empty' response.json)
           if [ -n "$ISSUE_KEY" ]; then
             echo "issue=$ISSUE_KEY" >> $GITHUB_OUTPUT
