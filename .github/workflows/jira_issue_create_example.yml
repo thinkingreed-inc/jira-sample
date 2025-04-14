@@ -27,7 +27,11 @@ jobs:
                 "name": "Task"
               },
               "summary": "${{ github.event.issue.title }}",
-              "description": "${{ github.event.issue.body }}"
+              "description": "${{ github.event.issue.body }}",
+              "labels": [
+                "github issues",
+                "github-issue-#${{ github.event.issue.number }}"
+              ]
             }
           }' \
           ${{ secrets.JIRA_BASE_URL }}/rest/api/2/issue/
