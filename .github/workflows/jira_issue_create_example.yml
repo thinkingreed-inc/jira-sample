@@ -13,7 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     name: Jira Example
     steps:
+    - name: Check Secrets
+      run: |
+        if [ -z "${{ secrets.JIRA_BASE_URL }}" ] || [ -z "${{ secrets.JIRA_USER_EMAIL }}" ] || [ -z "${{ secrets.JIRA_API_TOKEN }}" ] || [ -z "${{ secrets.JIRA_PROJECT }}" ]; then
+          echo "Required secrets are missing. Skipping Manage Jira Issue step."
+          exit 1
+        fi
+
     - name: Manage Jira Issue
+      if: success() # Check Secretsが成功した場合のみ実行
       run: |
         ISSUE_KEY=$(curl --request GET \
         --url '${{ secrets.JIRA_BASE_URL }}/rest/api/3/search?jql=project%20%3D%20"${{ secrets.JIRA_PROJECT }}"%20AND%20summary%20~%20%22%5C%22github%23${{ github.event.issue.number }}*%5C%22%22' \
