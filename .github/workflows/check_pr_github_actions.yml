@@ -1,5 +1,6 @@
 # Thinkingreedの社内管理用のGitHub Actions
 # 本コードは社内管理用のため、基本的にサポートの対象外となります。
+name: Check PR Workflow Changes
 
 on:
   pull_request:
