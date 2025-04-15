@@ -1,9 +1,11 @@
+# Thinkingreedの社内管理用のGitHub Actions
+# 本コードは社内管理用のため、基本的にサポートの対象外となります。
 name: Manage Jira Issues
 
 # githubのissueが開かれたとき、編集されたとき、削除されたとき、またはクローズされたときに作動
 on:
   issues:
-    types: [opened, edited, deleted, closed]
+    types: [opened, edited, deleted, closed, reopened]
 
 # ここからworkflow
 jobs:
@@ -83,6 +85,21 @@ jobs:
                 "update": {
                   "labels": [
                     { "add": "github-closed" }
+                  ]
+                }
+              }' \
+              ${{ secrets.JIRA_BASE_URL }}/rest/api/2/issue/$ISSUE_KEY
+          fi
+        elif [ "${{ github.event.action }}" = "reopened" ]; then
+          if [ -n "$ISSUE_KEY" ]; then
+            # チケットが存在する場合、ラベルからgithub-closedを削除
+            curl -X PUT \
+              -H "Content-Type: application/json" \
+              -u ${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }} \
+              -d '{
+                "update": {
+                  "labels": [
+                    { "remove": "github-closed" }
                   ]
                 }
               }' \
