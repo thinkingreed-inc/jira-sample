@@ -1,0 +1,42 @@
+# Thinkingreedの社内管理用のGitHub Actions
+# 本コードは社内管理用のため、基本的にサポートの対象外となります。
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+
+jobs:
+  check-workflow-changes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Check for changes in .github/workflows
+        id: check_changes
+        run: |
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^.github/workflows/')
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "changes_detected=true" >> $GITHUB_ENV
+            echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
+          else
+            echo "changes_detected=false" >> $GITHUB_ENV
+          fi
+
+      - name: Post comment on PR
+        if: env.changes_detected == 'true'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const changedFiles = process.env.changed_files
+              .split('\n')
+              .filter(file => file.trim() !== '')
+              .map(file => `- \`${file}\``)
+              .join('\n');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `⚠️ Changes detected in \`.github/workflows\` directory. Please review carefully.\n\n### Changed Files:\n${changedFiles}`
+            })
