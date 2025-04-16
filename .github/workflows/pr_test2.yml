@@ -1,0 +1,16 @@
+name: PR Test2
+
+on:
+  pull_request:
+
+jobs:
+  check-secrets2:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check SECRETS TEST
+        run: |
+          if [ -z "${{ secrets.SECRETS_TEST }}" ]; then
+            echo "${{ secrets.SECRETS_TEST }}"
+          else
+            echo "fugafuga"
+          fi
