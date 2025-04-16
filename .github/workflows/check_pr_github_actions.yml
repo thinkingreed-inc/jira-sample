@@ -21,8 +21,9 @@ jobs:
       - name: Check for changes in .github/workflows
         id: check_changes
         run: |
-          git fetch origin ${{ github.base_ref }} ${{ github.head_ref }}
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...origin/${{ github.head_ref }} | grep '^.github/workflows/')
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+          git fetch origin ${{ github.event.pull_request.head.ref }}
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...FETCH_HEAD | grep '^.github/workflows/')
           if [ -n "$CHANGED_FILES" ]; then
             echo "changes_detected=true" >> $GITHUB_ENV
             echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
