@@ -1,9 +1,7 @@
 name: Hello World Workflow
 
 on:
-  issues:
-    types:
-      - opened
+  pull_request:
 
 jobs:
   say-hello:
