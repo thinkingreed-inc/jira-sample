@@ -1,0 +1,11 @@
+name: Hello World Workflow2
+
+on:
+  pull_request:
+
+jobs:
+  say-hello2:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print Hello World
+        run: echo "Hello World"
