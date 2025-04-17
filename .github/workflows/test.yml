@@ -1,0 +1,18 @@
+# Hello World
+name: PR Test3
+
+on:
+  pull_request:
+
+jobs:
+  check-SECRETS:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check SECRETS
+        run: |
+          if [ -z "${{ secrets.SECRETS_TEST }}" ]; then
+            echo "Error: SECRETS_TEST secret is not set."
+            exit 1
+          else
+            echo "test"
+          fi
