@@ -27,11 +27,14 @@ jobs:
       if: success() # Check Secretsが成功した場合のみ実行
       run: |
         ISSUE_KEY=$(curl --request GET \
-        --url '${{ secrets.JIRA_BASE_URL }}/rest/api/3/search?jql=project%20%3D%20"${{ secrets.JIRA_PROJECT }}"%20AND%20summary%20~%20%22%5C%22github%23${{ github.event.issue.number }}*%5C%22%22' \
-        --user '${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }}' \
+        --url "${{ secrets.JIRA_BASE_URL }}/rest/api/3/search?jql=project%20%3D%20'${{ secrets.JIRA_PROJECT }}'%20AND%20summary%20~%20%22%5C%22github%23${{ github.event.issue.number }}*%5C%22%22" \
+        --user "${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }}" \
         --header 'Accept: application/json' \
         --header 'Content-Type: application/json' \
           | jq -r '.issues[0].key // empty')
+
+        GITHUB_ISSUE_TITLE="${GITHUB_ISSUE_TITLE}"
+        GITHUB_ISSUE_BODY="${GITHUB_ISSUE_BODY}"
 
         if [ "${{ github.event.action }}" = "opened" ] || [ "${{ github.event.action }}" = "edited" ]; then
           if [ -z "$ISSUE_KEY" ]; then
@@ -39,36 +42,36 @@ jobs:
             curl -X POST \
               -H "Content-Type: application/json" \
               -u ${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }} \
-              -d '{
-                "fields": {
-                  "project": {
-                    "key": "${{ secrets.JIRA_PROJECT }}"
+              -d "{
+                \"fields\": {
+                  \"project\": {
+                    \"key\": \"${{ secrets.JIRA_PROJECT }}\"
                   },
-                  "issuetype": {
-                    "name": "Task"
+                  \"issuetype\": {
+                    \"name\": \"Task\"
                   },
-                  "summary": "github#${{ github.event.issue.number }} ${GITHUB_ISSUE_TITLE}",
-                  "description": "${{ github.event.issue.html_url }}\n\n${GITHUB_ISSUE_BODY}",
-                  "labels": [
-                    "github-issue"
+                  \"summary\": \"github#${{ github.event.issue.number }} $GITHUB_ISSUE_TITLE\",
+                  \"description\": \"${{ github.event.issue.html_url }}\n\n$GITHUB_ISSUE_BODY\",
+                  \"labels\": [
+                    \"github-issue\"
                   ]
                 }
-              }' \
+              }" \
               ${{ secrets.JIRA_BASE_URL }}/rest/api/2/issue/
           else
             # チケットが存在する場合は更新
             curl -X PUT \
               -H "Content-Type: application/json" \
               -u ${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }} \
-              -d '{
-                "fields": {
-                  "summary": "github#${{ github.event.issue.number }} ${GITHUB_ISSUE_TITLE}",
-                  "description": "${{ github.event.issue.html_url }}\n\n${GITHUB_ISSUE_BODY}",
-                  "labels": [
-                    "github-issue"
+              -d "{
+                \"fields\": {
+                  \"summary\": \"github#${{ github.event.issue.number }} $GITHUB_ISSUE_TITLE\",
+                  \"description\": \"${{ github.event.issue.html_url }}\n\n$GITHUB_ISSUE_BODY\",
+                  \"labels\": [
+                    \"github-issue\"
                   ]
                 }
-              }' \
+              }" \
               ${{ secrets.JIRA_BASE_URL }}/rest/api/2/issue/$ISSUE_KEY
           fi
         elif [ "${{ github.event.action }}" = "deleted" ]; then
