@@ -7,6 +7,9 @@ on:
   issues:
     types: [opened, edited, deleted, closed, reopened]
 
+permissions:
+  issues: read
+
 # ここからworkflow
 jobs:
   build:
@@ -16,7 +19,7 @@ jobs:
     - name: Check Secrets
       run: |
         if [ -z "${{ secrets.JIRA_BASE_URL }}" ] || [ -z "${{ secrets.JIRA_USER_EMAIL }}" ] || [ -z "${{ secrets.JIRA_API_TOKEN }}" ] || [ -z "${{ secrets.JIRA_PROJECT }}" ]; then
-          echo "Required secrets are missing. Skipping Manage Jira Issue step."
+          echo "JIRA登録用のSecretsが登録されていません。"
           exit 1
         fi
 
@@ -44,8 +47,8 @@ jobs:
                   "issuetype": {
                     "name": "Task"
                   },
-                  "summary": "github#${{ github.event.issue.number }} ${{ github.event.issue.title }}",
-                  "description": "${{ github.event.issue.html_url }}\n\n${{ github.event.issue.body }}",
+                  "summary": "github#${{ github.event.issue.number }} ${GITHUB_ISSUE_TITLE}",
+                  "description": "${{ github.event.issue.html_url }}\n\n${GITHUB_ISSUE_BODY}",
                   "labels": [
                     "github-issue"
                   ]
@@ -59,8 +62,8 @@ jobs:
               -u ${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }} \
               -d '{
                 "fields": {
-                  "summary": "github#${{ github.event.issue.number }} ${{ github.event.issue.title }}",
-                  "description": "${{ github.event.issue.html_url }}\n\n${{ github.event.issue.body }}",
+                  "summary": "github#${{ github.event.issue.number }} ${GITHUB_ISSUE_TITLE}",
+                  "description": "${{ github.event.issue.html_url }}\n\n${GITHUB_ISSUE_BODY}",
                   "labels": [
                     "github-issue"
                   ]
@@ -114,3 +117,6 @@ jobs:
               ${{ secrets.JIRA_BASE_URL }}/rest/api/2/issue/$ISSUE_KEY
           fi
         fi
+      env:
+        GITHUB_ISSUE_TITLE: "${{ github.event.issue.title }}"
+        GITHUB_ISSUE_BODY: "${{ github.event.issue.body }}"
