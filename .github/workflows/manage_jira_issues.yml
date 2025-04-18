@@ -34,7 +34,7 @@ jobs:
           | jq -r '.issues[0].key // empty')
 
         GITHUB_ISSUE_TITLE=$(echo "${{ github.event.issue.title }}" | jq -Rr @json)
-        GITHUB_ISSUE_BODY=$(echo "${{ github.event.issue.body }}" | jq -Rr @json)
+        GITHUB_ISSUE_BODY=$(echo "${{ github.event.issue.body }}" | jq -Rr @json | sed ':a;N;$!ba;s/\n/\\n/g')
 
         if [ "${{ github.event.action }}" = "opened" ] || [ "${{ github.event.action }}" = "edited" ]; then
           if [ -z "$ISSUE_KEY" ]; then
