@@ -34,9 +34,21 @@ jobs:
         | jq -r '.issues[0].key // empty')
 
         SUMMARY="github#${{ github.event.issue.number }} $GITHUB_ISSUE_TITLE"
+
+        # 変換処理：Markdown → JIRA Wiki
+        BODY_CONVERTED=$(echo "$GITHUB_ISSUE_BODY" | perl -pe '
+          s/\*\*(.+?)\*\*/\*$1\*/g;           # 太字 **text** → *text*
+          s/__(.+?)__/+$1+/g;                 # 下線 __text__ → +text+
+          s/^\* /- /gmi;                      # 箇条書き * item → - item
+          s/^### (.+)/h3. $1/gm;             # 見出し ### → h3.
+          s/^## (.+)/h2. $1/gm;
+          s/^# (.+)/h1. $1/gm;
+          s/\[([^\]]+?)\]\(([^)]+?)\)/\[$1|$2\]/g; # リンク [text](url) → [text|url]
+        ')
+
         DESCRIPTION="${{ github.event.issue.html_url }}
 
-        $GITHUB_ISSUE_BODY"
+        $BODY_CONVERTED"
 
         if [ "${{ github.event.action }}" = "opened" ] || [ "${{ github.event.action }}" = "edited" ]; then
           if [ -z "$ISSUE_KEY" ]; then
