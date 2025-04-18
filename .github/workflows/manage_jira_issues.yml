@@ -34,7 +34,9 @@ jobs:
         | jq -r '.issues[0].key // empty')
 
         SUMMARY="github#${{ github.event.issue.number }} $GITHUB_ISSUE_TITLE"
-        DESCRIPTION="${{ github.event.issue.html_url }}\n\n$GITHUB_ISSUE_BODY"
+        DESCRIPTION="${{ github.event.issue.html_url }}
+
+        $GITHUB_ISSUE_BODY"
 
         if [ "${{ github.event.action }}" = "opened" ] || [ "${{ github.event.action }}" = "edited" ]; then
           if [ -z "$ISSUE_KEY" ]; then
