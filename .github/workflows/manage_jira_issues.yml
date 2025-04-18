@@ -33,8 +33,8 @@ jobs:
         --header 'Content-Type: application/json' \
           | jq -r '.issues[0].key // empty')
 
-        GITHUB_ISSUE_TITLE="${GITHUB_ISSUE_TITLE}"
-        GITHUB_ISSUE_BODY="${GITHUB_ISSUE_BODY}"
+        GITHUB_ISSUE_TITLE=$(echo "${{ github.event.issue.title }}" | jq -Rr @json)
+        GITHUB_ISSUE_BODY=$(echo "${{ github.event.issue.body }}" | jq -Rr @json)
 
         if [ "${{ github.event.action }}" = "opened" ] || [ "${{ github.event.action }}" = "edited" ]; then
           if [ -z "$ISSUE_KEY" ]; then
@@ -51,7 +51,7 @@ jobs:
                     \"name\": \"Task\"
                   },
                   \"summary\": \"github#${{ github.event.issue.number }} $GITHUB_ISSUE_TITLE\",
-                  \"description\": \"${{ github.event.issue.html_url }}\n\n$GITHUB_ISSUE_BODY\",
+                  \"description\": \"${{ github.event.issue.html_url }}\\n\\n$GITHUB_ISSUE_BODY\",
                   \"labels\": [
                     \"github-issue\"
                   ]
@@ -66,7 +66,7 @@ jobs:
               -d "{
                 \"fields\": {
                   \"summary\": \"github#${{ github.event.issue.number }} $GITHUB_ISSUE_TITLE\",
-                  \"description\": \"${{ github.event.issue.html_url }}\n\n$GITHUB_ISSUE_BODY\",
+                  \"description\": \"${{ github.event.issue.html_url }}\\n\\n$GITHUB_ISSUE_BODY\",
                   \"labels\": [
                     \"github-issue\"
                   ]
